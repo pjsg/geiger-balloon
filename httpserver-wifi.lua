@@ -19,10 +19,14 @@ end
 
 if (conf.wifi.mode == wifi.STATION) or (conf.wifi.mode == wifi.STATIONAP) then
     print('Client MAC: ',wifi.sta.getmac())
+    if not conf.wifi.station then
+        local apinfo = wifi.sta.getapinfo()
+        if apinfo[1] then
+          conf.wifi.station = apinfo[1] --
+        end
+    end
     if conf.wifi.station then
         wifi.sta.config(conf.wifi.station)
-    else
-        wifi.sta.changeap(1)
     end
 end
 

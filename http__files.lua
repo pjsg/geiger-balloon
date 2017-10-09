@@ -35,14 +35,7 @@ return function (connection, req, args)
    
    connection:send("<b>Unused heap: </b> " .. node.heap() .. " bytes<br/>\n")
 
-   connection:send("<p>\n<b>Files:</b><br/>\n<ul>\n")
-   for name, size in pairs(file.list()) do
-      local isHttpFile = string.match(name, "(http/)") ~= nil
-      if isHttpFile then
-         local url = string.match(name, ".*/(.*)")
-         connection:send('   <li><a href="' .. url .. '">' .. url .. "</a> (" .. size .. " bytes)</li>\n")
-      end
-   end
+   connection:send("<p>\n<b>Data files:</b><br/>\n<ul>\n")
    for name, size in pairsByKeys(file.list()) do
       local isDataFile = string.match(name, "dat$") ~= nil
       if isDataFile then
@@ -50,5 +43,17 @@ return function (connection, req, args)
          connection:send('   <li><a href="' .. url .. '">' .. name .. "</a> (" .. size .. " bytes)</li>\n")
       end
    end
-   connection:send("</ul>\n</p>\n</body></html>")
+   connection:send("</ul>\n</p>\n")
+   
+   connection:send("<p>\n<b>Files:</b><br/>\n<ul>\n")
+   for name, size in pairs(file.list()) do
+      local isHttpFile = string.match(name, "(http__)") ~= nil
+      if isHttpFile then
+         local url = string.match(name, "http__(.*)")
+         connection:send('   <li><a href="' .. url .. '">' .. url .. "</a> (" .. size .. " bytes)</li>\n")
+      end
+   end
+   connection:send("</ul>\n</p>\n")
+   
+   connection:send("</body></html>")
 end
