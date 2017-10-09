@@ -8,9 +8,10 @@
 require("bit")
 require("i2c")
 
-local moduleName = 'dsrtc'
 local M = {}
-_G[moduleName] = M
+
+-- We don't save the module in the global array as we want it
+-- to get GC'ed when not needed (which is most of the time)
 
 -- Constants:
 M.EVERYSECOND = 6
@@ -93,126 +94,21 @@ function M.setTime(second, minute, hour, day, date, month, year, disOsc)
   i2c.stop(id)
 end
 
--- Reset alarmId flag to let alarm to be triggered again
-function M.reloadAlarms ()
-  if bit == nil or bit.band == nil or bit.bor == nil then
-    print("[ERROR] Module bit is required to use alarm function")
-    return nil
-  end
+function M.getTemp() 
   i2c.start(id)
   i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0F)
+  i2c.write(id, 0x11)
   i2c.stop(id)
   i2c.start(id)
   i2c.address(id, dev_addr, i2c.RECEIVER)
-  local d = string.byte(i2c.read(id, 1), 1)
+  local c=i2c.read(id, 2)
   i2c.stop(id)
-  -- Both flag needs to be 0 to let alarms trigger
-  d = bit.band(d,252)
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0F)
-  i2c.write(id, d)
-  i2c.stop(id)
-  print('[LOG] Alarm '..almId..' reloaded')
+
+  local temp16 = struct.unpack(">h", c)
+
+  return bit.rshift(temp16 * 10, 8) 
 end
 
--- Enable alarmId bit. Let it to be triggered
-function M.enableAlarm (almId)
-  if bit == nil or bit.band == nil or bit.bor == nil then
-    print("[ERROR] Module bit is required to use alarm function")
-    return nil
-  end
-  if almId ~= 1 and almId ~= 2 then print('[ERROR] Wrong alarm id (1 or 2): '..almId) return end
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0E)
-  i2c.stop(id)
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.RECEIVER)
-  local c = string.byte(i2c.read(id, 1), 1)
-  i2c.stop(id)
-  c = bit.bor(c,4)
-  if almId == 1 then c = bit.bor(c,1)
-  else c = bit.bor(c,2) end
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0E)
-  i2c.write(id, c)
-  i2c.stop(id)
-  M.reloadAlarms()
-  print('[LOG] Alarm '..almId..' enabled')
-end
--- If almID equals 1 or 2 disable that alarm, otherwise disables both.
-function M.disableAlarm (almId)
-  if bit == nil or bit.band == nil or bit.bor == nil then
-    print("[ERROR] Module bit is required to use alarm function")
-    return nil
-  end
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0E)
-  i2c.stop(id)
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.RECEIVER)
-  local c = string.byte(i2c.read(id, 1), 1)
-  i2c.stop(id)
-  if almId == 1 then c = bit.band(c, 254)
-  elseif almId == 2 then c = bit.band(c, 253)
-  else
-    almId = '1 and 2'
-    c = bit.band(c, 252)
-  end
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0E)
-  i2c.write(id, c)
-  i2c.stop(id)
-  print('[LOG] Alarm '..almId..' disabled')
-end
-
--- almId can be 1 or 2;
--- almType should be taken from constants
-function M.setAlarm (almId, almType, second, minute, hour, date)
-  if bit == nil or bit.band == nil or bit.bor == nil then
-    print("[ERROR] Module bit is required to use alarm function")
-    return nil
-  end
-  if almId ~= 1 and almId ~= 2 then print('[ERROR] Wrong alarm id (1 or 2): '..almId) return end
-  M.enableAlarm(almId)
-  second = decToBcd(second)
-  minute = decToBcd(minute)
-  hour = decToBcd(hour)
-  date = decToBcd(date)
-  if almType == M.EVERYSECOND or almType == M.EVERYMINUTE then
-    second = addAlarmBit(second)
-    minute = addAlarmBit(minute)
-    hour = addAlarmBit(hour)
-    date = addAlarmBit(date)
-  elseif almType == M.SECOND then
-    minute = addAlarmBit(minute)
-    hour = addAlarmBit(hour)
-    date = addAlarmBit(date)
-  elseif almType == M.MINUTE then
-    hour = addAlarmBit(hour)
-    date = addAlarmBit(date)
-  elseif almType == M.HOUR then
-    date = addAlarmBit(date)
-  elseif almType == M.DAY then
-    date = addAlarmBit(date,1)
-  end
-  local almStart = 0x07
-  if almId == 2 then almStart = 0x0B end
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, almStart)
-  if almId == 1 then i2c.write(id, second) end
-  i2c.write(id, minute)
-  i2c.write(id, hour)
-  i2c.write(id, date)
-  i2c.stop(id)
-  print('[LOG] Alarm '..almId..' setted')
-end
 
 -- Get Control and Status bytes
 function M.getBytes ()
@@ -227,27 +123,6 @@ function M.getBytes ()
   return tonumber(string.byte(c, 1)), tonumber(string.byte(c, 2))
 end
 
--- Resetting RTC Stop Flag
-function M.resetStopFlag ()
-  if bit == nil or bit.band == nil or bit.bor == nil then
-    print("[ERROR] Module bit is required to reset stop flag")
-    return nil
-  end
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0F)
-  i2c.stop(id)
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.RECEIVER)
-  local s = string.byte(i2c.read(id, 1))
-  i2c.stop(id)
-  s = bit.band(s,127)
-  i2c.start(id)
-  i2c.address(id, dev_addr, i2c.TRANSMITTER)
-  i2c.write(id, 0x0F)
-  i2c.write(id, s)
-  i2c.stop(id)
-  print('[LOG] RTC stop flag resetted')
-end
+
 
 return M

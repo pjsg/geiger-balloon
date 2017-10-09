@@ -1,14 +1,14 @@
 -- set DS3231 from ntp
 
-local dsrtc = dofile('ds-rtc.lua')
+local dsrtc = dofile('ds-rtc.lc')
 
 
-ts2gmt=function(ts)
+local ts2gmt=function(ts)
     local tm = rtctime.epoch2cal(ts)
     return {tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"]}
 end
 
-format=function()
+local format=function()
     local ts=rtctime.get()
     local dt=ts2gmt(ts)
     return string.format("%04u/%01u/%01u %02u:%02u:%02u", unpack(dt))
@@ -24,14 +24,21 @@ end
 
 i2csetup(1)
 
-sntp.sync(nil,
-  function(sec, usec, server, info)
-    local tm = rtctime.epoch2cal(sec)
-    dsrtc.setTime(tm["sec"], tm["min"], tm["hour"], 1, tm["day"], tm["mon"], tm["year"] - 2000)
-    print ("Clock set")
-  end,
-  nil
-)
+local function startSync()
+    sntp.sync(nil,
+      function(sec, usec, server, info)
+        local tm = rtctime.epoch2cal(sec)
+        dsrtc.setTime(tm["sec"], tm["min"], tm["hour"], 1, tm["day"], tm["mon"], tm["year"] - 2000)
+        print ("Clock set")
+      end,
+      nil
+    )
+end
+
+local status, err = pcall(startSync)
+if not status then
+  print ("Failed to start sntp")
+end
 
 local days = {
     {   0,  31,  60,  91, 121, 152, 182, 213, 244, 274, 305, 335},
@@ -50,3 +57,5 @@ local second, minute, hour, day, date, month, year = dsrtc.getTime()
 local epoch = dt2epoch(second, minute, hour, date, month, year + 30    )
 
 rtctime.set(epoch, 0)
+
+print ("temp is " .. dsrtc.getTemp())
