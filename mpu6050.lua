@@ -24,11 +24,10 @@
 local M = {}
 
 local dev_addr = 0x68 --104
-local bus = 0
 local sda, scl = 1, 3
    
 local function init_I2C()
-  i2c.setup(bus, sda, scl, i2c.SLOW)    
+  i2c.setup(0, sda, scl, i2c.SLOW)    
 end
 
 local function init_MPU(reg,val)  --(107) 0x6B / 0
@@ -36,22 +35,22 @@ local function init_MPU(reg,val)  --(107) 0x6B / 0
 end
 
 local function write_reg_MPU(reg,val)
-  i2c.start(bus)
-  i2c.address(bus, dev_addr, i2c.TRANSMITTER)
-  i2c.write(bus, reg)
-  i2c.write(bus, val)
-  i2c.stop(bus)
+  i2c.start(0)
+  i2c.address(0, dev_addr, i2c.TRANSMITTER)
+  i2c.write(0, reg)
+  i2c.write(0, val)
+  i2c.stop(0)
 end
 
 local function read_bytes_MPU(reg, n)
-  i2c.start(bus) 
-  i2c.address(bus, dev_addr, i2c.TRANSMITTER)
-  i2c.write(bus, reg)
-  i2c.stop(bus)
-  i2c.start(bus)
-  i2c.address(bus, dev_addr, i2c.RECEIVER)
-  local c=i2c.read(bus, n)
-  i2c.stop(bus)
+  i2c.start(0) 
+  i2c.address(0, dev_addr, i2c.TRANSMITTER)
+  i2c.write(0, reg)
+  i2c.stop(0)
+  i2c.start(0)
+  i2c.address(0, dev_addr, i2c.RECEIVER)
+  local c=i2c.read(0, n)
+  i2c.stop(0)
   return c
 end
 
@@ -89,9 +88,9 @@ local function read_MPU_raw()
 end
 
 local function status_MPU(dev_addr)
-     i2c.start(bus)
-     local c=i2c.address(bus, dev_addr ,i2c.TRANSMITTER)
-     i2c.stop(bus)
+     i2c.start(0)
+     local c=i2c.address(0, dev_addr ,i2c.TRANSMITTER)
+     i2c.stop(0)
      if c==true then
         print(" Device found at address : "..string.format("0x%X",dev_addr))
      else print("Device not found !!")
@@ -99,7 +98,6 @@ local function status_MPU(dev_addr)
 end
 
 local function check_MPU(dev_addr)
-   print("")
    status_MPU(0x68)
    local c = read_reg_MPU(117) --Register 117 – Who Am I - 0x75
    if string.byte(c, 1)==104 then print(" MPU6050 Device answered OK!")
@@ -122,16 +120,18 @@ M.init = function()
     check_MPU(0x68)
     write_reg_MPU(0x6B,0)    -- master reset, gyro as clock source
     read_MPU_raw()
+
+    M.init = nil
 end
 
-local lastReading = string.rep("\0", 14)
+--local lastReading = string.rep("\0", 14)
 
 M.initfifo = function()
     M.init()
     write_reg_MPU(27, 0x08)
     write_reg_MPU(28, 0x08)
     write_reg_MPU(107, 1)
-    write_reg_MPU(25, 249) -- 4 samples per second
+    write_reg_MPU(25, 248) -- 4 samples per second
     write_reg_MPU(26, 6)
     write_reg_MPU(35, 0xf8)
     write_reg_MPU(106, 0x04)
@@ -143,6 +143,8 @@ M.initfifo = function()
     --    lastReading = read_bytes_MPU(116, 14)
     --  end
     --end)
+
+    M.initfifo = nil
 end
 
 M.getReading = function()
