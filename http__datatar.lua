@@ -12,6 +12,14 @@ local function octal(n, l)
   return result
 end
 
+local function dliter(a, k)
+  return next(file.list(), k)
+end
+
+local function dirlist()
+  return dliter, nil, nil
+end
+
 return function (connection, req, args)
    dofile("httpserver-header.lc")(connection, 200, 'tar', false, {
      "content-disposition: attachment; filename=\"balloon-data.tar\""
@@ -20,7 +28,7 @@ return function (connection, req, args)
  
    local now = rtctime.get()
 
-    for k, v in pairs(file.list()) do
+    for k, v in dirlist() do
       if string.match(k, "dat$") then
         local f = file.open(k, "r")
         -- Make the header record

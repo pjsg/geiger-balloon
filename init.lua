@@ -1,3 +1,5 @@
+node.setcpufreq(node.CPU160MHZ)
+
 -- Compile freshly uploaded nodemcu-httpserver lua files.
 if file.exists("httpserver-compile.lc") then
    dofile("httpserver-compile.lc")
@@ -12,6 +14,7 @@ dofile("httpserver-wifi.lc")
 local function startLogging()
   stopServing()
   wifi.setmode(wifi.NULLMODE)
+  node.setcpufreq(node.CPU80MHZ)
   -- start the data logger
   dofile("balloon-startup.lc")
 end

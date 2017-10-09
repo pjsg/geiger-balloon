@@ -6,7 +6,7 @@ M.dataBuffer = ""
 
 M.getFileName = function() 
   local sec = rtctime.get()
-  sec = sec - sec % 180
+  sec = sec - sec % 600
   local tm = rtctime.epoch2cal(sec)
 
   return string.format("%04d%02d%02d-%02d%02d%02d.dat",
