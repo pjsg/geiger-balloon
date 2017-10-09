@@ -12,25 +12,19 @@ end
 local worst = 0
 
 local function getAccelerometerData() 
-  local start = tmr.now()
   local result = mpu6050.getReading()
-  local diff = tmr.now() - start
-  if diff > worst then
-    print ("Reading accel took " .. diff .. " usecs")
-    worst = diff
-  end
   return result
 end
 
 M.getReading = function()
   local sec, usec = rtctime.get()
-  local ms = sec * 1000 + usec
+  local ms = sec * 1000 + usec / 1000
 
   return struct.pack(">ic14h", ms, getAccelerometerData(), getGeigerCount())
 end
 
 M.init = function()
-  mpu6050.init()
+  mpu6050.initfifo()
   tmr.create():alarm(1000, 0, function() geiger.start() end)
 end
 
