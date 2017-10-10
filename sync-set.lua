@@ -14,7 +14,7 @@ local format=function()
     return string.format("%04u/%01u/%01u %02u:%02u:%02u", unpack(dt))
 end
 
-i2csetup = function(clock)
+local i2csetup = function(clock)
   if clock then
     i2c.setup(0, 2, 3, i2c.SLOW)
   else
@@ -35,10 +35,12 @@ local function startSync()
     )
 end
 
-local status, err = pcall(startSync)
-if not status then
-  print ("Failed to start sntp")
-end
+tmr.create():alarm(10000, 0, function()
+    local status, err = pcall(startSync)
+    if not status then
+      print ("Failed to start sntp")
+    end
+end)
 
 local days = {
     {   0,  31,  60,  91, 121, 152, 182, 213, 244, 274, 305, 335},

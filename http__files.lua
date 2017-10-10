@@ -25,9 +25,10 @@ return function (connection, req, args)
    dofile("httpserver-header.lc")(connection, 200, filetype)
 
    local remaining, used, total = file.fsinfo()
+   local sec, usec = rtctime.get()
 
    if json then
-     local encoder = sjson.encoder({fsinfo={remaining=remaining, used=used, total=total},
+     local encoder = sjson.encoder({now=sec, fsinfo={remaining=remaining, used=used, total=total},
         files=file.list()})
      while true do
         local data = encoder:read(512)
@@ -57,6 +58,9 @@ return function (connection, req, args)
    
    connection:send("<b>Unused heap: </b> " .. node.heap() .. " bytes<br/>\n")
 
+   connection:send("<b>System date: </b><span id=date>??</span><br/>\n")
+   connection:send("<script type=text/javascript>document.getElementById('date').innerText = new Date(" .. sec .. "000).toString();</script>\n")
+
    connection:send("<p>\n<b>Data files:</b><br/>\n<ul>\n")
    for name, size in pairsByKeys(file.list()) do
       local isDataFile = string.match(name, "dat$") ~= nil
@@ -68,7 +72,7 @@ return function (connection, req, args)
    connection:send("</ul>\n</p>\n")
    
    connection:send("<p>\n<b>Files:</b><br/>\n<ul>\n")
-   for name, size in pairs(file.list()) do
+   for name, size in pairsByKeys(file.list()) do
       local isHttpFile = string.match(name, "(http__)") ~= nil
       if isHttpFile then
          local url = string.match(name, "http__(.*)")
