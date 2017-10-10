@@ -115,7 +115,9 @@ return function (request)
    if not e then return nil end
    local line = request:sub(1, e - 1)
    local r = {}
-   _, i, r.method, r.request = line:find("^([A-Z]+) (.-) HTTP/[1-9]+.[0-9]+$")
+   local unused
+   local i
+   unused, i, r.method, r.request = line:find("^([A-Z]+) (.-) HTTP/[1-9]+.[0-9]+$")
    if not (r.method and r.request) then
       --print("invalid request: ")
       --print(request)

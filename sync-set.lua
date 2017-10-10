@@ -60,4 +60,11 @@ local epoch = dt2epoch(second, minute, hour, date, month, year + 30    )
 
 rtctime.set(epoch, 0)
 
-print ("temp is " .. dsrtc.getTemp())
+local temp = dsrtc.getTemp()
+
+print ("temp is " .. temp)
+
+local f = file.open("http__bootlog.txt", "a")
+f:write(string.format("Booted at %04d/%02d/%02d %02d:%02d:%02d -- rtc temp %dF\n",
+    year + 2000, month, date, hour, minute, second, temp * 9 / 50 + 32))
+f:close()

@@ -53,6 +53,7 @@ return function (connection, req, args)
         hdr = pad(hdr, 512)
         -- calc checksum
         local total = 0
+        local i
         for i = 1, 512 do
           total = total + string.byte(hdr, i)
         end

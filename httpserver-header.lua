@@ -27,6 +27,7 @@ return function(connection, code, extension, isGzipped, extraHeaders)
       connection:send("Cache-Control: private, max-age=2592000\r\nContent-Encoding: gzip\r\n")
    end
    if (extraHeaders) then
+      local i
       for i, extraHeader in ipairs(extraHeaders) do
          connection:send(extraHeader .. "\r\n")
       end

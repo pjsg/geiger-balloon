@@ -29,6 +29,8 @@ function stopServing()
   end
   theServer = nil
   mdns.close()
+  wifi.eventmon.unregister(wifi.eventmon.STA_GOT_IP)
+  stopServing = nil
 end
 
 return function (onconnect)
