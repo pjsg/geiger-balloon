@@ -16,7 +16,28 @@
 
 
 return function (connection, req, args)
-   dofile("httpserver-header.lc")(connection, 200, 'html')
+   local json = args['json'] --
+
+   local filetype = 'html'
+   if json then
+     filetype = 'json'
+   end
+   dofile("httpserver-header.lc")(connection, 200, filetype)
+
+   local remaining, used, total = file.fsinfo()
+
+   if json then
+     local encoder = sjson.encoder({fsinfo={remaining=remaining, used=used, total=total},
+        files=file.list()})
+     while true do
+        local data = encoder:read(512)
+        if not data then
+           break
+        end
+       connection:send(data)
+     end
+     return
+   end
 
    connection:send([===[
       <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Server File Listing</title></head>
@@ -24,10 +45,11 @@ return function (connection, req, args)
    <h1>Server File Listing</h1>
    ]===])
 
-   local remaining, used, total = file.fsinfo()
    connection:send("<b>Total size: </b> " .. total .. " bytes<br/>\n" ..
                    "<b>In Use: </b> " .. used .. " bytes<br/>\n" ..
                    "<b>Free: </b> " .. remaining .. " bytes<br/>\n")
+
+   connection:send("<b>Log time left (approx): </b> " .. (remaining - 100000) / (80 * 3600) .. " hours<br/>\n")
 
    local flashAddress, flashSize = file.fscfg ()
    connection:send("<b>Flash Address: </b> " .. flashAddress .. " bytes<br/>\n" ..

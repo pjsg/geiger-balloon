@@ -7,6 +7,8 @@ else
    dofile("httpserver-compile.lua")
 end
 
+print ("Bootreason", node.bootreason())
+
 -- Set up NodeMCU's WiFi
 dofile("httpserver-wifi.lc")
 

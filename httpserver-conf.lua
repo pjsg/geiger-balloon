@@ -19,6 +19,7 @@ if (conf.wifi.mode == wifi.SOFTAP) or (conf.wifi.mode == wifi.STATIONAP) then
    conf.wifi.accessPoint = {}
    conf.wifi.accessPoint.config = {}
    conf.wifi.accessPoint.config.ssid = "balloon-"..node.chipid() -- Name of the WiFi network to create.
+   conf.wifi.accessPoint.config.pwd = "cchs balloon"
    conf.wifi.accessPoint.net = {}
    conf.wifi.accessPoint.net.ip = "192.168.111.1"
    conf.wifi.accessPoint.net.netmask="255.255.255.0"

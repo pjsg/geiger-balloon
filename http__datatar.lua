@@ -25,18 +25,27 @@ return function (connection, req, args)
      "content-disposition: attachment; filename=\"balloon-data.tar\""
    })
    
- 
+   local asText = args['csv'] --
+   
    local now = rtctime.get()
 
     for k, v in dirlist() do
       if string.match(k, "dat$") then
         local f = file.open(k, "r")
         -- Make the header record
-        local hdr = pad(k, 100) .. 
+        local filename = k
+        local filesize = v
+        if asText then
+           filename = filename .. ".csv"
+           -- 11,6,6,6,6,6,6,6,6\n
+           -- 12 + 7 * 8
+           filesize = v / 20 * 68
+        end
+        local hdr = pad(filename, 100) .. 
             "0000664\0" ..
             "0001000\0" ..
             "0001000\0" ..
-            octal(v, 11) .. "\0" ..
+            octal(filesize, 11) .. "\0" ..
             octal(now, 11) .. "\0" ..
             "        " ..
             "0"
@@ -56,14 +65,26 @@ return function (connection, req, args)
 
         hdr = ""
 
-        while v > 0 do
-          local b = f:read(512)
-
-          connection:send(b)
-          if #(b) < 512 then
-            connection:send(string.rep("\0", 512 - #(b)))
-          end
-          v = v - 512
+        if asText then
+            while v > 0 do
+              local b = f:read(20)
+              local row = string.format("%11d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d\n", struct.unpack(">ihhhhhhhH", b))
+              connection:send(row)
+              v = v - 20
+            end
+            local lastblock = bit.band(filesize, 511)
+            if lastblock > 0 then
+              connection:send(string.rep("\0", 512-lastblock))
+            end
+        else
+            while v > 0 do
+              local b = f:read(512)
+              connection:send(b)
+              if #(b) < 512 then
+                connection:send(string.rep("\0", 512 - #(b)))
+              end
+              v = v - 512
+            end
         end
 
         f:close()
