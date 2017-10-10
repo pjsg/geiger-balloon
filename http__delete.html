@@ -1,0 +1,31 @@
+<html><head><title>Request Delete</title></head>
+<body>
+To delete all the data files, please enter 'yes' in the box and press submit.
+<p>
+You have roughly <span id=hours>??</span> hours left for logging.
+
+<form action="/delete.lc" method="POST">
+Type 'yes' to delete <span id=count>??</span> files: <input type=text name="delete">
+<br>
+<input type=submit value="Delete">
+</form>
+<script type="text/javascript">
+var xhr = new XMLHttpRequest();
+xhr.open('GET', '/files.lc?json=1');
+xhr.onload = function() {
+    if (xhr.status === 200) {
+        var fileInfo = JSON.parse(xhr.responseText);
+        var total = 0;
+        for (var fn in fileInfo.files) {
+          if (fn.endsWith(".dat")) {
+            total += 1;
+          }
+        }
+        document.getElementById('count').innerText = total;
+        document.getElementById('hours').innerText = Math.floor((fileInfo.fsinfo.remaining - 100000) / (80 * 3600));
+    }
+};
+xhr.send();
+</script>
+</body>
+</html>
