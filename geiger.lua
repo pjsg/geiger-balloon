@@ -15,8 +15,10 @@ M.start = function()
     uart.alt(1)
     uart.on('data', '\n', function(data)
         if (#(data) > 10) then
-            local count = string.match(data, "CPS, (%d+)")
-            lastReading = lastReading + count
+            local count = string.match(data, "CPS, (%d+),")
+            if count then
+                lastReading = lastReading + count
+            end
         end
     end, 0)
 end
